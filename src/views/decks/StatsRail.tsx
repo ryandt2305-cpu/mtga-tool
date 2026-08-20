@@ -10,6 +10,7 @@ import { community, result } from "../../stores/deckStore";
 import { allCards, cardsByName, collection } from "../../stores/collectionStore";
 import Disclosure from "./Disclosure";
 import { WC_ICON } from "./wildcardIcons";
+import CraftAdvisor from "./CraftAdvisor";
 
 const CURVE_LABELS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
 
@@ -65,6 +66,7 @@ const StatsRail: Component = () => (
         <SignalsDisclosure />
         <OwnershipDisclosure />
         <WildcardCostDisclosure />
+        <CraftAdvisor />
         <WarningsDisclosure />
         <CommunityDisclosure />
       </div>
