@@ -329,6 +329,21 @@ fn compute_power(card: &OracleCard, ctx: &ScoreCtx) -> f32 {
     }
 }
 
+/// Scarcity multiplier for wildcard costs: spending from a nearly-empty
+/// pool must clear a higher bar than spending from a deep one. BestDeck
+/// budgets are u32::MAX so they always take the 1.0 arm.
+pub fn scarcity_mult(remaining: u32) -> f32 {
+    match remaining {
+        0 => 2.0,
+        1 => 1.8,
+        2 => 1.5,
+        3 => 1.3,
+        4 => 1.15,
+        5 => 1.05,
+        _ => 1.0,
+    }
+}
+
 fn compute_ownership(card: &OracleCard, ctx: &ScoreCtx) -> (f32, bool) {
     if card.is_owned() {
         return (1.0, true);
@@ -343,14 +358,15 @@ fn compute_ownership(card: &OracleCard, ctx: &ScoreCtx) -> (f32, bool) {
     if ctx.budget.get(&rarity) == 0 {
         return (-10.0, false);
     }
-    let cost = match rarity {
+    let remaining = ctx.budget.get(&rarity);
+    let base = match rarity {
         Rarity::Common => -0.1,
         Rarity::Uncommon => -0.2,
         Rarity::Rare => -0.6,
         Rarity::Mythic => -0.9,
         _ => 0.0,
     };
-    (cost, true)
+    (base * scarcity_mult(remaining), true)
 }
 
 fn compute_curve_fit(card: &OracleCard, ctx: &ScoreCtx) -> f32 {

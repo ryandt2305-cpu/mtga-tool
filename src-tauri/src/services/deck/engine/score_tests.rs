@@ -628,6 +628,73 @@ mod tests {
     }
 
     #[test]
+    fn scarcity_mult_shape() {
+        // Deep pool → no surcharge; drains monotonically as budget empties.
+        assert_eq!(scarcity_mult(100), 1.0);
+        assert_eq!(scarcity_mult(6), 1.0);
+        assert!(scarcity_mult(3) > 1.0);
+        assert!(scarcity_mult(1) > scarcity_mult(3));
+        // Monotonic non-increasing in remaining count.
+        for n in 0..10u32 {
+            assert!(scarcity_mult(n) >= scarcity_mult(n + 1));
+        }
+    }
+
+    #[test]
+    fn ownership_cost_scales_with_scarcity() {
+        let tpl = midrange_template();
+        let (rc, cc, theme, subs, bab, community, dn, _budget) = empty_ctx_state();
+        let deep = WildcardBudget { common: 4, uncommon: 4, rare: 20, mythic: 4 };
+        let scarce = WildcardBudget { common: 4, uncommon: 4, rare: 1, mythic: 4 };
+
+        let mut unowned = sample_card();
+        unowned.name_lower = "x".into();
+        unowned.roles = vec![Role::Threat];
+        unowned.printings[0].rarity = Rarity::Rare;
+        unowned.printings[0].owned_qty = 0;
+
+        let ctx_deep = ScoreCtx {
+            template: &tpl,
+            role_counts: &rc,
+            curve_counts: &cc,
+            theme: &theme,
+            commander_subtypes: &subs,
+            build_around_bonus: &bab,
+            community: &community,
+            deck_names: &dn,
+            owned_only: true,
+            budget: &deep,
+            commander_subtypes_lower: None,
+            card_tokens: None,
+            tag_idf: None,
+            pip_counts: &[0u32; 5],
+            identity: 0,
+        };
+        let ctx_scarce = ScoreCtx {
+            template: &tpl,
+            role_counts: &rc,
+            curve_counts: &cc,
+            theme: &theme,
+            commander_subtypes: &subs,
+            build_around_bonus: &bab,
+            community: &community,
+            deck_names: &dn,
+            owned_only: true,
+            budget: &scarce,
+            commander_subtypes_lower: None,
+            card_tokens: None,
+            tag_idf: None,
+            pip_counts: &[0u32; 5],
+            identity: 0,
+        };
+        let s_deep = score_card(&unowned, &ctx_deep);
+        let s_scarce = score_card(&unowned, &ctx_scarce);
+        assert!(s_scarce.ownership < s_deep.ownership);
+        assert!((s_deep.ownership - (-0.6)).abs() < 1e-5);
+        assert!((s_scarce.ownership - (-0.6 * 1.8)).abs() < 1e-5);
+    }
+
+    #[test]
     fn community_synergy_is_normalised() {
         use crate::services::deck::engine::types::CommunitySignal;
         let card = named_threat("Syn", None);
