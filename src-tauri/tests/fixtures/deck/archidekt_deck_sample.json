@@ -1,0 +1,23 @@
+{
+  "id": 12345,
+  "name": "Baylen Tokens",
+  "deckFormat": 20,
+  "categories": [
+    {"id": 1, "name": "Commander", "isPremier": true, "includedInDeck": true, "includedInPrice": true},
+    {"id": 2, "name": "Maybeboard", "isPremier": false, "includedInDeck": false, "includedInPrice": false},
+    {"id": 3, "name": "Sideboard", "isPremier": false, "includedInDeck": true, "includedInPrice": true},
+    {"id": 4, "name": "Ramp", "isPremier": false, "includedInDeck": true, "includedInPrice": true},
+    {"id": 5, "name": "Removal", "isPremier": false, "includedInDeck": true, "includedInPrice": true},
+    {"id": 6, "name": "Basic", "isPremier": false, "includedInDeck": true, "includedInPrice": true},
+    {"id": 7, "name": "Considering", "isPremier": false, "includedInDeck": false, "includedInPrice": false}
+  ],
+  "cards": [
+    {"quantity": 1, "categories": ["Commander"], "card": {"oracleCard": {"name": "Baylen, the Haymaker"}}},
+    {"quantity": 1, "categories": ["Ramp"], "card": {"oracleCard": {"name": "Cultivate"}}},
+    {"quantity": 1, "categories": ["Removal"], "card": {"oracleCard": {"name": "Swords to Plowshares"}}},
+    {"quantity": 30, "categories": ["Basic"], "card": {"oracleCard": {"name": "Forest"}}},
+    {"quantity": 1, "categories": ["Maybeboard"], "card": {"oracleCard": {"name": "Maybe Card"}}},
+    {"quantity": 1, "categories": ["Sideboard"], "card": {"oracleCard": {"name": "Side Card"}}},
+    {"quantity": 1, "categories": ["Considering"], "card": {"oracleCard": {"name": "Custom Excluded Card"}}}
+  ]
+}

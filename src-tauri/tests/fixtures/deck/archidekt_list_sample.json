@@ -1,0 +1,8 @@
+{
+  "count": 2,
+  "next": "https://archidekt.com/api/decks/v3/?deckFormat=20&orderBy=-viewCount&size=100&pageSize=20&page=2",
+  "results": [
+    {"id": 12345, "name": "Baylen Tokens", "size": 100, "viewCount": 5432, "deckFormat": 20, "colors": {"W": 12, "U": 0, "B": 0, "R": 9, "G": 37}},
+    {"id": 67890, "name": "Teferi Control", "size": 100, "viewCount": 3210, "deckFormat": 20, "colors": {"W": 20, "U": 31, "B": 0, "R": 0, "G": 0}}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "count": 2,
+  "next": null,
+  "results": [
+    {
+      "identity": "GW",
+      "uses": [
+        {"card": {"name": "Baylen, the Haymaker"}},
+        {"card": {"name": "Scute Swarm"}}
+      ],
+      "legalities": {"brawl": true, "standardBrawl": false}
+    },
+    {
+      "identity": "UW",
+      "uses": [
+        {"card": {"name": "Teferi, Hero of Dominaria"}},
+        {"card": {"name": "The Wandering Emperor"}},
+        {"card": {"name": "Wedding Announcement"}}
+      ],
+      "legalities": {"brawl": true, "standardBrawl": true}
+    }
+  ]
+}

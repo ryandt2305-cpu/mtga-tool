@@ -1,0 +1,21 @@
+{
+  "container": {
+    "json_dict": {
+      "cardlists": [
+        {
+          "header": "Top Cards",
+          "cardviews": [
+            {"name": "Sol Ring", "num_decks": 900, "potential_decks": 1000, "synergy": 0.15},
+            {"name": "Cultivate", "num_decks": 300, "potential_decks": 1000, "synergy": 0.08}
+          ]
+        },
+        {
+          "header": "Ramp",
+          "cardviews": [
+            {"name": "Rampant Growth", "num_decks": 200, "potential_decks": 1000, "synergy": 0.05, "inclusion": 0.20}
+          ]
+        }
+      ]
+    }
+  }
+}

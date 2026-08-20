@@ -1,0 +1,5 @@
+{"object":"tag","id":"t-ramp","label":"ramp","slug":"ramp","type":"oracle","parent_ids":[],"child_ids":["t-landramp"],"taggings":[{"oracle_id":"o-cultivate","weight":"median"}]}
+
+{"object":"tag","id":"t-landramp","label":"land-ramp","slug":"land-ramp","type":"oracle","parent_ids":["t-ramp"],"child_ids":[],"taggings":[{"oracle_id":"o-cultivate","weight":"median"}]}
+
+{"object":"tag","id":"t-orphan","label":"orphan","slug":"orphan","type":"oracle","parent_ids":["t-missing"],"child_ids":[],"taggings":[]}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/niclasgustafsson/tauri/refs/heads/dev/crates/tauri-config-schema/schema.json",
+  "productName": "MTGA Hub",
+  "version": "0.1.0",
+  "identifier": "com.mtga-hub.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "bundle": {
+    "icon": ["icons/icon.ico"]
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MTGA Hub",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/card_images/**/*"]
+      },
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost https://cards.scryfall.io https://api.scryfall.com data: blob:; connect-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'"
+    }
+  }
+}

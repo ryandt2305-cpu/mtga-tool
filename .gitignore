@@ -1,0 +1,33 @@
+# --- build / deps ---
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# --- extracted MTGA game assets (regenerate: python tools/extract_mtga_icons.py -o public/icons/) ---
+public/icons/
+tools/test_output/
+tools/texture_err.txt
+test_slice/
+
+# --- personal data / research scratch (contains account IDs, collection exports, memory dumps) ---
+python/output/
+python/research/captures/
+python/research/snap_*.json
+
+# --- docs (contain local paths) ---
+docs/
+
+# --- tooling / local state ---
+**/__pycache__/
+*.pyc
+.superpowers/
+.claude/
+AGENTS.md
+nul
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

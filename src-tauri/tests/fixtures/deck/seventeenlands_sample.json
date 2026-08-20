@@ -1,0 +1,5 @@
+[
+  {"name": "Sol Ring", "mtga_id": 91001, "ever_drawn_win_rate": 0.62, "game_count": 1200},
+  {"name": "Cultivate", "mtga_id": 91002, "ever_drawn_win_rate": 0.55, "game_count": 800},
+  {"name": "Filler Card", "mtga_id": 91003, "ever_drawn_win_rate": 0.90, "game_count": 100}
+]
