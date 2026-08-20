@@ -4,6 +4,8 @@ mod build_tests;
 mod score_tests;
 #[cfg(test)]
 pub(crate) mod test_fixtures;
+#[cfg(test)]
+mod upgrade_tests;
 
 pub mod commanders;
 pub mod fill;
@@ -14,6 +16,7 @@ pub mod roles;
 pub mod score;
 pub mod template;
 pub mod types;
+pub mod upgrade;
 
 pub use types::*;
 

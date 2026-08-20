@@ -445,12 +445,22 @@ pub fn score_card(card: &OracleCard, ctx: &ScoreCtx) -> Scored {
     let pip_fit = compute_pip_fit(card, ctx.pip_counts, ctx.identity);
 
     let w = &ctx.template.weights;
+    // Combo-completion urgency: raw addition to total so a missing combo
+    // piece can outrank cards that only win on role-need. The same bonus
+    // also flows through `compute_synergy`; the top-level term stays useful
+    // because synergy saturates at 1.0 for already-synergistic cards.
+    let completion_urgency = ctx
+        .combo_completions
+        .and_then(|m| m.get(&card.name_lower))
+        .map(|c| c.bonus)
+        .unwrap_or(0.0);
     let total = w.role * role_need
         + w.synergy * synergy
         + w.power * power
         + w.ownership * ownership
         + w.curve * curve_fit
-        + w.pip * pip_fit;
+        + w.pip * pip_fit
+        + completion_urgency;
 
     let mut reasons: Vec<String> = Vec::new();
     reasons.push(role.label().to_string());

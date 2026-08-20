@@ -401,9 +401,12 @@ pub(super) fn fill_core(
 }
 
 pub fn fill(oracles: &[OracleCard], community: &CommunityData, plan: &FillPlan) -> FillOutcome {
-    let (mut st, basics, basics_needed, _reserved) = fill_core(oracles, community, plan);
+    let (mut st, basics, basics_needed, reserved) = fill_core(oracles, community, plan);
     let prescore = super::local_search::static_prescore(oracles, community, plan);
     super::local_search::improve(oracles, community, plan, &mut st, &prescore);
+    if plan.owned_only {
+        super::upgrade::run(oracles, community, plan, &mut st, reserved);
+    }
     // Recompute basics after local search — pip changes may have shifted the
     // colour balance, so a new basic-land breakdown better matches the deck.
     let (basics, basic_warnings) = if basics_needed > 0 {
