@@ -7,4 +7,5 @@ pub mod history_db;
 pub mod image_cache;
 pub mod log;
 pub mod memory;
+pub mod mtga_install;
 pub mod schema_guard;

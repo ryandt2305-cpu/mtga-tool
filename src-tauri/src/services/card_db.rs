@@ -21,18 +21,15 @@ use tauri::{AppHandle, Emitter};
 use crate::events;
 use crate::models::{CardInfo, Rarity};
 use crate::services::diagnostics::{self, CDB_001, CDB_002, CDB_003, CDB_004, CDB_005, CDB_006, CDB_007};
+use crate::services::mtga_install;
 use crate::services::schema_guard;
-
-/// Known MTGA install paths (same as Python reference).
-const STEAM_DEFAULT: &str = r"C:\Program Files (x86)\Steam\steamapps\common\MTGA";
-const EPIC_DEFAULT: &str = r"C:\Program Files\Epic Games\MagicTheGathering";
 
 // ── Error type ──────────────────────────────────────────────────────
 
 /// Errors from pure card DB operations (no Tauri dependency).
 #[derive(Debug)]
 pub enum CardDbError {
-    InstallNotFound,
+    InstallNotFound(Vec<String>),
     DatabaseNotFound(String),
     OverrideNotFound(String),
     ConnectionFailed(String),
@@ -43,10 +40,10 @@ pub enum CardDbError {
 impl fmt::Display for CardDbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InstallNotFound => write!(
+            Self::InstallNotFound(checked) => write!(
                 f,
-                "MTGA install not found. Checked: {}, {}",
-                STEAM_DEFAULT, EPIC_DEFAULT
+                "MTGA install not found. Checked: {}",
+                checked.join(", ")
             ),
             Self::DatabaseNotFound(dir) => {
                 write!(f, "No Raw_CardDatabase_*.mtga found in {}", dir)
@@ -164,17 +161,6 @@ pub(crate) fn load_enum_map(
     Ok(map)
 }
 
-/// Find the MTGA install directory by checking known paths.
-fn find_mtga_install() -> Option<PathBuf> {
-    for path_str in &[STEAM_DEFAULT, EPIC_DEFAULT] {
-        let path = Path::new(path_str);
-        if path.is_dir() {
-            return Some(path.to_path_buf());
-        }
-    }
-    None
-}
-
 /// Find the Raw_CardDatabase_*.mtga file inside the install directory.
 fn find_card_database(install_dir: &Path) -> Option<PathBuf> {
     let raw_dir = install_dir.join("MTGA_Data").join("Downloads").join("Raw");
@@ -216,7 +202,7 @@ pub fn resolve_db_path(path_override: Option<&str>) -> Result<PathBuf, CardDbErr
         }
         None => {
             let install_dir =
-                find_mtga_install().ok_or(CardDbError::InstallNotFound)?;
+                mtga_install::discover().map_err(CardDbError::InstallNotFound)?;
 
             find_card_database(&install_dir).ok_or_else(|| {
                 CardDbError::DatabaseNotFound(
@@ -456,7 +442,7 @@ impl CardDb {
         // Step 1: Resolve database path
         let db_path = resolve_db_path(path_override).map_err(|e| {
             let diag = match &e {
-                CardDbError::InstallNotFound => &CDB_001,
+                CardDbError::InstallNotFound(_) => &CDB_001,
                 CardDbError::DatabaseNotFound(_) => &CDB_002,
                 CardDbError::OverrideNotFound(_) => &CDB_007,
                 _ => &CDB_003,

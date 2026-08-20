@@ -6,11 +6,13 @@
 // success, exits (the watch loop takes over from there).
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter, Manager};
 
+use crate::events;
+use crate::services::card_db::CardDb;
 use crate::services::diagnostics::{self, MEM_022, MEM_023};
 
 use super::process;
@@ -32,6 +34,10 @@ pub fn poll_loop(app: AppHandle, stop_flag: Arc<AtomicBool>) {
 
     let interval = Duration::from_millis(POLL_INTERVAL_MS);
 
+    // PID of the last card-DB load attempt, so a missing database logs its
+    // CDB error once per game launch instead of every poll tick.
+    let mut last_load_attempt_pid: Option<u32> = None;
+
     loop {
         // Sleep in small slices so an external stop is responsive.
         let mut slept = Duration::ZERO;
@@ -48,6 +54,11 @@ pub fn poll_loop(app: AppHandle, stop_flag: Arc<AtomicBool>) {
 
         match process::find_process("MTGA.exe") {
             Ok(Some(pid)) => {
+                // If the startup card-DB load failed (e.g., non-default install
+                // path with MTGA not yet running), retry now — install discovery
+                // can resolve the path from the running process.
+                ensure_card_db_loaded(&app, pid, &mut last_load_attempt_pid);
+
                 diagnostics::emit_info(
                     &app,
                     &MEM_023,
@@ -83,5 +94,43 @@ pub fn poll_loop(app: AppHandle, stop_flag: Arc<AtomicBool>) {
                 log::warn!("Process poller: process enumeration failed — {}", e);
             }
         }
+    }
+}
+
+/// Retry the card-DB load if it isn't loaded yet, at most once per detected
+/// MTGA.exe PID. `CardDb::load` emits its own diagnostics and the
+/// `card_db:loaded` event; on success we also emit `app::CARD_DB_READY` for
+/// parity with the startup path.
+fn ensure_card_db_loaded(app: &AppHandle, pid: u32, last_attempt_pid: &mut Option<u32>) {
+    let state = app.state::<Mutex<CardDb>>();
+
+    {
+        let Ok(db) = state.lock() else { return };
+        if db.is_loaded() {
+            return;
+        }
+    }
+
+    if *last_attempt_pid == Some(pid) {
+        return;
+    }
+    *last_attempt_pid = Some(pid);
+
+    let Ok(mut db) = state.lock() else { return };
+    if db.is_loaded() {
+        return; // raced with the startup load thread
+    }
+    match db.load(app, None) {
+        Ok(count) => {
+            log::info!(
+                "Process poller: card DB loaded after game launch ({} cards)",
+                count
+            );
+            let _ = app.emit(
+                events::app::CARD_DB_READY,
+                &events::CardDbReadyPayload { card_count: count },
+            );
+        }
+        Err(e) => log::warn!("Process poller: card DB load failed — {}", e),
     }
 }

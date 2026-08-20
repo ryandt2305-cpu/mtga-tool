@@ -14,7 +14,8 @@ use windows::Win32::System::Memory::{
     PAGE_PROTECTION_FLAGS,
 };
 use windows::Win32::System::Threading::{
-    OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
+    PROCESS_QUERY_INFORMATION, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
 };
 
 use super::scanner::ENTRY_SIZE;
@@ -141,6 +142,31 @@ fn is_readable(mbi: &MEMORY_BASIC_INFORMATION) -> bool {
         return false;
     }
     true
+}
+
+/// Get the full path of a process's executable by PID.
+pub fn process_exe_path(pid: u32) -> Result<std::path::PathBuf, String> {
+    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }
+        .map_err(|e| format!("OpenProcess failed for PID {}: {}", pid, e))?;
+
+    let mut buf = [0u16; 1024];
+    let mut len = buf.len() as u32;
+    let result = unsafe {
+        QueryFullProcessImageNameW(
+            handle,
+            PROCESS_NAME_WIN32,
+            windows::core::PWSTR(buf.as_mut_ptr()),
+            &mut len,
+        )
+    };
+    unsafe {
+        let _ = CloseHandle(handle);
+    }
+    result.map_err(|e| format!("QueryFullProcessImageNameW failed for PID {}: {}", pid, e))?;
+
+    Ok(std::path::PathBuf::from(String::from_utf16_lossy(
+        &buf[..len as usize],
+    )))
 }
 
 /// Find a running process by executable name (case-insensitive).
