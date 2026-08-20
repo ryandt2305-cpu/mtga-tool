@@ -16,6 +16,7 @@ pub const UPGRADE_ACCEPT_DELTA: f32 = 0.02;
 pub const UPGRADE_REMOVAL_CANDIDATES: usize = 8;
 pub const UPGRADE_SWAP_CANDIDATES: usize = 80;
 pub const UPGRADE_MAX_ITERS: usize = 200;
+pub const UPGRADE_SUGGESTIONS: usize = 15;
 
 pub fn run(
     oracles: &[OracleCard],
@@ -116,4 +117,104 @@ pub fn run(
             break;
         }
     }
+}
+
+/// Rank the unowned candidates that did NOT make the deck: what the next
+/// wildcards should buy. gain = candidate score with the ownership term
+/// removed (so an empty budget doesn't poison the ranking) minus the score
+/// of the card it would displace. Ties break by Archidekt staple share
+/// (cross-deck reusability), then name.
+pub fn craft_suggestions(
+    oracles: &[OracleCard],
+    community: &CommunityData,
+    plan: &FillPlan,
+    st: &FillState,
+    n: usize,
+) -> Vec<CraftSuggestion> {
+    let anchored: HashSet<usize> = plan.must_include.iter().copied().collect();
+    let w = &plan.template.weights;
+
+    // Displacement targets: weakest stored total per role + global weakest.
+    let mut weakest_by_role: std::collections::HashMap<Role, (usize, f32)> =
+        std::collections::HashMap::new();
+    let mut weakest_global: Option<(usize, f32)> = None;
+    for (i, role, s) in &st.chosen {
+        if oracles[*i].is_land || anchored.contains(i) {
+            continue;
+        }
+        let e = weakest_by_role.entry(*role).or_insert((*i, s.total));
+        if s.total < e.1 {
+            *e = (*i, s.total);
+        }
+        if weakest_global.map_or(true, |(_, t)| s.total < t) {
+            weakest_global = Some((*i, s.total));
+        }
+    }
+
+    let ctx = make_ctx(
+        plan,
+        community,
+        &st.role_counts,
+        &st.curve_counts,
+        &st.pip_counts,
+        &st.deck_names,
+        &st.budget,
+    );
+
+    let mut out: Vec<(CraftSuggestion, f32)> = Vec::new();
+    for &pidx in &plan.pool {
+        if st.used.contains(&pidx) {
+            continue;
+        }
+        let card = &oracles[pidx];
+        if card.is_land || card.is_owned() {
+            continue;
+        }
+        let Some(bp) = card.best_printing() else {
+            continue;
+        };
+        let s = score_card(card, &ctx);
+        // Strip the ownership component so gain ranks card quality, not
+        // whether the budget happens to be empty right now.
+        let total_adj = s.total - w.ownership * s.ownership;
+        let displaced = weakest_by_role.get(&s.role).copied().or(weakest_global);
+        let Some((d_idx, d_total)) = displaced else {
+            continue;
+        };
+        let gain = total_adj - d_total;
+        if gain <= 0.0 {
+            continue;
+        }
+        let mut reasons = s.reasons.clone();
+        let min = plan.template.min(s.role);
+        if st.role_counts.get(&s.role).copied().unwrap_or(0) < min {
+            reasons.push(format!("fills {} gap", s.role.label()));
+        }
+        let staple = community
+            .by_name
+            .get(&card.name_lower)
+            .and_then(|sig| sig.staple)
+            .unwrap_or(0.0);
+        out.push((
+            CraftSuggestion {
+                grp_id: bp.grp_id,
+                oracle_id: card.oracle_id.clone(),
+                name: card.name.clone(),
+                rarity: bp.rarity.clone(),
+                gain,
+                affordable: st.budget.get(&bp.rarity) > 0,
+                replaces_name: Some(oracles[d_idx].name.clone()),
+                reasons,
+            },
+            staple,
+        ));
+    }
+    out.sort_by(|a, b| {
+        b.0.gain
+            .partial_cmp(&a.0.gain)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal))
+            .then_with(|| a.0.name.cmp(&b.0.name))
+    });
+    out.into_iter().take(n).map(|(s, _)| s).collect()
 }

@@ -158,3 +158,56 @@ fn upgrade_targets_missing_combo_piece_over_generic_staple() {
         "budget must not go to the generic staple"
     );
 }
+
+#[test]
+fn craft_suggestions_ranked_unowned_and_capped() {
+    let budget = WildcardBudget { common: 1, uncommon: 1, rare: 0, mythic: 0 };
+    let input = base_input(CommunityData::default(), budget);
+    let req = base_req(budget);
+    let template = resolve_template(&input, &req).unwrap();
+    let plan = make_plan(&input, &req, &template).unwrap();
+    let (mut st, _b, _n, reserved) = fill_core(&input.oracles, &input.community, &plan);
+    let prescore = static_prescore(&input.oracles, &input.community, &plan);
+    improve(&input.oracles, &input.community, &plan, &mut st, &prescore);
+    upgrade::run(&input.oracles, &input.community, &plan, &mut st, reserved);
+    let sugg = upgrade::craft_suggestions(
+        &input.oracles,
+        &input.community,
+        &plan,
+        &st,
+        upgrade::UPGRADE_SUGGESTIONS,
+    );
+    assert!(sugg.len() <= upgrade::UPGRADE_SUGGESTIONS);
+    assert!(!sugg.is_empty(), "fixture has many unowned upgrades");
+    for w in sugg.windows(2) {
+        assert!(w[0].gain >= w[1].gain, "must be sorted by gain desc");
+    }
+    for s in &sugg {
+        let card = input
+            .oracles
+            .iter()
+            .find(|c| c.oracle_id == s.oracle_id)
+            .unwrap();
+        assert!(!card.is_owned(), "owned cards must not be suggested");
+        assert!(s.gain > 0.0);
+        // affordable mirrors the post-run budget.
+        assert_eq!(s.affordable, st.budget.get(&s.rarity) > 0);
+    }
+}
+
+#[test]
+fn build_result_carries_suggestions_and_budget_left() {
+    let budget = WildcardBudget { common: 2, uncommon: 2, rare: 1, mythic: 0 };
+    let input = base_input(CommunityData::default(), budget);
+    let req = base_req(budget);
+    let result = super::build(&input, &req).unwrap();
+    // OwnedOnly build: suggestions populated (fixture has unowned upgrades)
+    // and budget_left never exceeds the request.
+    assert!(!result.craft_suggestions.is_empty());
+    assert!(result.budget_left.common <= 2 && result.budget_left.rare <= 1);
+    // BestDeck build: no suggestions.
+    let mut req2 = base_req(budget);
+    req2.ownership = OwnershipMode::BestDeck;
+    let result2 = super::build(&input, &req2).unwrap();
+    assert!(result2.craft_suggestions.is_empty());
+}

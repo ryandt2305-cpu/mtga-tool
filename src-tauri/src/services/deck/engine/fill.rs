@@ -37,6 +37,7 @@ pub struct FillOutcome {
     pub basics: Vec<(usize, u32)>,
     pub warnings: Vec<Warning>,
     pub budget_left: WildcardBudget,
+    pub craft_suggestions: Vec<CraftSuggestion>,
 }
 
 pub(super) fn make_ctx<'a>(
@@ -415,11 +416,23 @@ pub fn fill(oracles: &[OracleCard], community: &CommunityData, plan: &FillPlan) 
         (basics, Vec::new())
     };
     st.warnings.extend(basic_warnings);
+    let craft_suggestions = if plan.owned_only {
+        super::upgrade::craft_suggestions(
+            oracles,
+            community,
+            plan,
+            &st,
+            super::upgrade::UPGRADE_SUGGESTIONS,
+        )
+    } else {
+        Vec::new()
+    };
     FillOutcome {
         chosen: st.chosen,
         basics,
         warnings: st.warnings,
         budget_left: st.budget,
+        craft_suggestions,
     }
 }
 

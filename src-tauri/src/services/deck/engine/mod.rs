@@ -447,8 +447,13 @@ pub fn build(input: &EngineInput, req: &BuildRequest) -> Result<BuildResult, Bui
         slots,
         stats,
         warnings,
-        craft_suggestions: Vec::new(),
-        budget_left: WildcardBudget::default(),
+        craft_suggestions: outcome.craft_suggestions,
+        // BestDeck runs with u32::MAX budgets — zero them for the wire
+        // instead of serializing 4294967295 to the frontend.
+        budget_left: match &req.ownership {
+            OwnershipMode::OwnedOnly { .. } => outcome.budget_left,
+            OwnershipMode::BestDeck => WildcardBudget::default(),
+        },
     })
 }
 
