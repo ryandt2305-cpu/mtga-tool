@@ -45,9 +45,11 @@ const ROLES: Role[] = [
   "recursion", "tutor", "protection", "threat", "finisher", "payoff", "utility",
 ];
 
-export function ownedWc(k: keyof WildcardBudget): number {
+// null = owned counts unknown (no log inventory or memory scan yet) — the
+// budget inputs unlock and the backend skips its owned-clamp in that state.
+export function ownedWc(k: keyof WildcardBudget): number | null {
   const inv = inventory();
-  if (inv === null) return 0;
+  if (inv === null) return null;
   switch (k) {
     case "common": return inv.wc_common;
     case "uncommon": return inv.wc_uncommon;
@@ -108,7 +110,7 @@ export const WildcardBudgetControl: Component = () => {
     const o = ownership();
     if (o.mode !== "owned_only") return;
     const owned = ownedWc(k);
-    const next = Math.max(0, Math.min(owned, v));
+    const next = owned === null ? Math.max(0, v) : Math.max(0, Math.min(owned, v));
     setOwnership({ ...o, wc_budget: { ...o.wc_budget, [k]: next } });
   }
 
@@ -130,12 +132,17 @@ export const WildcardBudgetControl: Component = () => {
                 class="decks-step-input"
                 type="number"
                 min="0"
-                max={ownedWc(k)}
+                max={ownedWc(k) ?? undefined}
                 value={budget()[k]}
                 onInput={(e) => setBudget(k, Number((e.currentTarget as HTMLInputElement).value) || 0)}
               />
               <button class="decks-step" onClick={() => setBudget(k, budget()[k] + 1)}>+</button>
-              <span class="decks-wc-owned">of {ownedWc(k)}</span>
+              <span
+                class="decks-wc-owned"
+                title={ownedWc(k) === null ? "Owned counts unknown — launch MTGA to sync" : undefined}
+              >
+                of {ownedWc(k) ?? "?"}
+              </span>
             </div>
           )}
         </For>

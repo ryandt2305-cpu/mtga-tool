@@ -90,32 +90,42 @@ fn cards_and_collection(app: &AppHandle) -> (Arc<HashMap<i32, CardInfo>>, HashMa
     (cards, collection)
 }
 
+/// Owned wildcard counts, used by the engine to clamp the user's budget.
+///
+/// Prefers log inventory merged with memory-scan scalars, falling back to
+/// memory scalars alone. When neither source has data yet the counts are
+/// unknown — returns u32::MAX per rarity so the owned-clamp in
+/// `engine::build` becomes a no-op and the manually entered budget is
+/// trusted as-is (the UI unlocks the budget inputs in the same state).
 fn wildcards(app: &AppHandle) -> WildcardBudget {
-    let log_state = match app.try_state::<Mutex<LogService>>() {
-        Some(s) => s,
-        None => return WildcardBudget::default(),
-    };
-    let inv = match log_state.lock().ok().and_then(|g| g.current_inventory()) {
-        Some(inv) => inv,
-        None => return WildcardBudget::default(),
-    };
-    let merged = if let Some(mem_state) = app.try_state::<Mutex<MemoryService>>() {
-        if let Ok(mem) = mem_state.lock() {
-            match mem.last_inventory_scalars() {
-                Some(s) => inv.merge_with_memory(s),
-                None => inv,
-            }
-        } else {
-            inv
+    let log_inv = app
+        .try_state::<Mutex<LogService>>()
+        .and_then(|s| s.lock().ok().and_then(|g| g.current_inventory()));
+    let mem_scalars = app
+        .try_state::<Mutex<MemoryService>>()
+        .and_then(|s| s.lock().ok().and_then(|m| m.last_inventory_scalars().cloned()));
+
+    let (common, uncommon, rare, mythic) = match (log_inv, mem_scalars) {
+        (Some(inv), Some(s)) => {
+            let m = inv.merge_with_memory(&s);
+            (m.wc_common, m.wc_uncommon, m.wc_rare, m.wc_mythic)
         }
-    } else {
-        inv
+        (Some(inv), None) => (inv.wc_common, inv.wc_uncommon, inv.wc_rare, inv.wc_mythic),
+        (None, Some(s)) => (s.wc_common, s.wc_uncommon, s.wc_rare, s.wc_mythic),
+        (None, None) => {
+            return WildcardBudget {
+                common: u32::MAX,
+                uncommon: u32::MAX,
+                rare: u32::MAX,
+                mythic: u32::MAX,
+            }
+        }
     };
     WildcardBudget {
-        common: merged.wc_common.max(0) as u32,
-        uncommon: merged.wc_uncommon.max(0) as u32,
-        rare: merged.wc_rare.max(0) as u32,
-        mythic: merged.wc_mythic.max(0) as u32,
+        common: common.max(0) as u32,
+        uncommon: uncommon.max(0) as u32,
+        rare: rare.max(0) as u32,
+        mythic: mythic.max(0) as u32,
     }
 }
 
