@@ -194,6 +194,68 @@ pub(crate) fn make_plan<'a>(
         }
     }
 
+    // Almost-complete combo targeting: combos where every piece is on Arena,
+    // format-legal, and inside the effective identity, and the user owns all
+    // pieces but one (commander and must_include count as owned). The missing
+    // piece carries a synergy bonus from the first scoring pass.
+    let mut guaranteed: HashSet<String> = HashSet::new();
+    guaranteed.insert(commander.name_lower.clone());
+    for &idx in &must_include {
+        guaranteed.insert(oracles[idx].name_lower.clone());
+    }
+    // name_lower -> (combos completed, have, size); first combo wins have/size.
+    let mut completion_counts: HashMap<String, (u32, u32, u32)> = HashMap::new();
+    for combo in &input.community.combos {
+        if combo.len() < 2 {
+            continue;
+        }
+        let mut missing: Option<&String> = None;
+        let mut missing_count = 0u32;
+        let mut viable = true;
+        for name in combo {
+            let Some(&idx) = name_lower_idx.get(name) else {
+                viable = false;
+                break;
+            };
+            let c = &oracles[idx];
+            if !c.legal_in(req.format) || !is_subset(c.color_identity, identity) {
+                viable = false;
+                break;
+            }
+            if !(c.is_owned() || guaranteed.contains(name)) {
+                missing_count += 1;
+                if missing_count > 1 {
+                    break;
+                }
+                missing = Some(name);
+            }
+        }
+        if !viable || missing_count != 1 {
+            continue;
+        }
+        let name = missing.expect("missing_count == 1");
+        let e = completion_counts.entry(name.clone()).or_insert((
+            0,
+            combo.len() as u32 - 1,
+            combo.len() as u32,
+        ));
+        e.0 += 1;
+    }
+    let combo_completions: HashMap<String, ComboCompletion> = completion_counts
+        .into_iter()
+        .map(|(name, (n, have, size))| {
+            (
+                name,
+                ComboCompletion {
+                    bonus: (score::COMBO_COMPLETION_BONUS * n as f32)
+                        .min(score::COMBO_COMPLETION_CAP),
+                    have,
+                    size,
+                },
+            )
+        })
+        .collect();
+
     let (owned_only, budget) = match &req.ownership {
         OwnershipMode::OwnedOnly { wc_budget } => {
             let mut b = *wc_budget;
@@ -257,7 +319,7 @@ pub(crate) fn make_plan<'a>(
         commander_subtypes_lower,
         card_tokens,
         tag_idf,
-        combo_completions: HashMap::new(),
+        combo_completions,
         owned_only,
         budget,
     })

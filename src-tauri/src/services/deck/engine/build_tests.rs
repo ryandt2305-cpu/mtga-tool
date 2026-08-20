@@ -289,6 +289,53 @@ fn staples_signal_lifts_known_card() {
 }
 
 #[test]
+fn make_plan_flags_almost_complete_combos() {
+    let oracles = gen_oracles();
+    let mut community = CommunityData::default();
+    // Combo A: two owned WG-legal pieces + one unowned piece → flagged.
+    // Combo B: contains an out-of-identity piece ("counter 03" is U) → skipped.
+    // Combo C: two pieces missing / out-of-identity → skipped.
+    community.combos = vec![
+        vec!["removal 00".into(), "draw 02".into(), "payoff 01".into()],
+        vec!["removal 00".into(), "counter 03".into()],
+        vec!["removal 00".into(), "payoff 01".into(), "payoff 03".into()],
+    ];
+    let input = EngineInput {
+        oracles,
+        wildcards_owned: WildcardBudget { common: 9, uncommon: 9, rare: 9, mythic: 9 },
+        community,
+    };
+    let req = BuildRequest {
+        format: Format::Brawl100,
+        commander_grp: Some(1),
+        ownership: OwnershipMode::OwnedOnly {
+            wc_budget: WildcardBudget { common: 9, uncommon: 9, rare: 9, mythic: 9 },
+        },
+        playstyle: Playstyle::Midrange,
+        color_subset: None,
+        theme_tags: vec![],
+        must_include: vec![],
+        build_around: vec![],
+        exclude: vec![],
+        seed: None,
+        template_overrides: None,
+        use_17lands: false,
+    };
+    let template = resolve_template(&input, &req).unwrap();
+    let plan = make_plan(&input, &req, &template).unwrap();
+
+    let entry = plan
+        .combo_completions
+        .get("payoff 01")
+        .expect("combo A flagged");
+    assert_eq!(entry.have, 2);
+    assert_eq!(entry.size, 3);
+    assert!((entry.bonus - 0.5).abs() < 1e-5);
+    assert!(!plan.combo_completions.contains_key("counter 03"));
+    assert!(!plan.combo_completions.contains_key("payoff 03"));
+}
+
+#[test]
 fn template_infeasible_warns() {
     // Trim to a tiny pool: commander + basics + a handful of cards. Aggro SB60.
     let full = gen_oracles();
