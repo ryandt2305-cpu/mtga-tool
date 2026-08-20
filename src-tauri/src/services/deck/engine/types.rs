@@ -119,10 +119,15 @@ impl Role {
     }
 }
 
+// Serde names are set explicitly (not via rename_all = "snake_case") because
+// snake_case would render StandardBrawl60 as "standard_brawl60", which does
+// not match the frontend's Format union or Format::as_str(). Keep these in
+// lock-step with `src/lib/deckTypes.ts::Format`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum Format {
+    #[serde(rename = "brawl100")]
     Brawl100,
+    #[serde(rename = "standardbrawl60")]
     StandardBrawl60,
 }
 
@@ -353,6 +358,20 @@ impl OracleCard {
     }
 }
 
+/// Almost-complete combo: the user owns every piece of a known combo except
+/// this card. Computed once per build in `make_plan`; consumed by
+/// `compute_synergy` so the missing piece carries value from the first
+/// scoring pass instead of depending on fill order.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ComboCompletion {
+    /// Additive synergy term (capped; see score::COMBO_COMPLETION_CAP).
+    pub bonus: f32,
+    /// Pieces already owned / guaranteed in deck.
+    pub have: u32,
+    /// Total pieces in the combo.
+    pub size: u32,
+}
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct CommunitySignal {
     pub inclusion: Option<f32>,
@@ -495,6 +514,18 @@ mod tests {
         let mut c = sample_card();
         c.mana_cost = "{1}{W/U}{G}{G}".into();
         assert_eq!(c.pips(), [1, 1, 0, 0, 2]);
+    }
+
+    #[test]
+    fn format_deserializes_frontend_strings() {
+        // Frontend sends "brawl100" and "standardbrawl60" (no underscore between
+        // the words and digits). Regression: serde snake_case for
+        // StandardBrawl60 previously produced "standard_brawl60", which failed
+        // to deserialize the string the UI actually sends.
+        let a: Format = serde_json::from_str("\"brawl100\"").expect("brawl100");
+        assert_eq!(a, Format::Brawl100);
+        let b: Format = serde_json::from_str("\"standardbrawl60\"").expect("standardbrawl60");
+        assert_eq!(b, Format::StandardBrawl60);
     }
 
     #[test]

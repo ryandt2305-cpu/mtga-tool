@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use super::template::Template;
-use super::types::{mask_to_letters, CommunityData, OracleCard, Role, WildcardBudget};
+use super::types::{
+    mask_to_letters, ComboCompletion, CommunityData, OracleCard, Role, WildcardBudget,
+};
 use crate::models::Rarity;
 
 pub struct ScoreCtx<'a> {
@@ -28,6 +30,9 @@ pub struct ScoreCtx<'a> {
     pub pip_counts: &'a [u32; 5],
     /// Colour identity mask (WUBRG) the deck can produce mana for.
     pub identity: u8,
+    /// Almost-complete combos keyed by the missing card's name_lower.
+    /// None in test/one-off callers (same pattern as card_tokens).
+    pub combo_completions: Option<&'a HashMap<String, ComboCompletion>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +74,11 @@ pub const GIH_CAP: f32 = 0.6;
 /// Added once per *additional* community signal present on a card
 /// (inclusion / staple / seed / GIH agreeing with each other).
 pub const AGREE_BONUS: f32 = 0.05;
+
+/// Synergy bonus per almost-complete combo this card would finish.
+pub const COMBO_COMPLETION_BONUS: f32 = 0.5;
+/// Cap when one card finishes several combos.
+pub const COMBO_COMPLETION_CAP: f32 = 0.7;
 
 /// Deck-share signal (EDHREC inclusion, Archidekt staple share, …) → power.
 /// Log-shaped with a 0.40 floor: being on a commander's page at all puts a
@@ -279,12 +289,19 @@ fn compute_synergy(card: &OracleCard, ctx: &ScoreCtx) -> f32 {
         .copied()
         .unwrap_or(0.0);
 
+    let completion_bonus = ctx
+        .combo_completions
+        .and_then(|m| m.get(&card.name_lower))
+        .map(|c| c.bonus)
+        .unwrap_or(0.0);
+
     clamp01(
         0.4 * theme_score
             + 0.3 * subtype_hit
             + 0.6 * community_synergy
             + 0.5 * combo_hit
-            + build_around,
+            + build_around
+            + completion_bonus,
     )
 }
 
@@ -499,6 +516,10 @@ pub fn score_card(card: &OracleCard, ctx: &ScoreCtx) -> Scored {
                 }
             }
         }
+    }
+
+    if let Some(c) = ctx.combo_completions.and_then(|m| m.get(&card.name_lower)) {
+        reasons.push(format!("completes combo (own {}/{})", c.have, c.size));
     }
 
     if ctx.build_around_bonus.contains_key(&card.oracle_id) {

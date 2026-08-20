@@ -257,6 +257,7 @@ pub(crate) fn make_plan<'a>(
         commander_subtypes_lower,
         card_tokens,
         tag_idf,
+        combo_completions: HashMap::new(),
         owned_only,
         budget,
     })

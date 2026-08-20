@@ -26,6 +26,8 @@ pub struct FillPlan<'a> {
     /// Inverse document frequency per tag over the pool. `compute_synergy`
     /// weights theme overlap by these so rare tags outweigh generic ones.
     pub tag_idf: HashMap<String, f32>,
+    /// name_lower → almost-complete combo info (see types::ComboCompletion).
+    pub combo_completions: HashMap<String, ComboCompletion>,
     pub owned_only: bool,
     pub budget: WildcardBudget,
 }
@@ -62,6 +64,7 @@ pub(super) fn make_ctx<'a>(
         budget,
         pip_counts,
         identity: plan.identity,
+        combo_completions: Some(&plan.combo_completions),
     }
 }
 

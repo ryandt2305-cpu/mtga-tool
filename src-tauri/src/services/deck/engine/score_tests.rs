@@ -5,7 +5,8 @@ mod tests {
     use crate::services::deck::engine::score::*;
     use crate::services::deck::engine::template::{template_for, Template};
     use crate::services::deck::engine::types::{
-        sample_card, CommunityData, Format, Playstyle, Printing, Role, WildcardBudget, G,
+        sample_card, ComboCompletion, CommunityData, Format, Playstyle, Printing, Role,
+        WildcardBudget, G,
     };
     use crate::models::Rarity;
 
@@ -72,6 +73,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let ctx_unowned = ScoreCtx {
             template: &tpl,
@@ -89,6 +91,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let ctx_zero = ScoreCtx {
             template: &tpl,
@@ -106,6 +109,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
 
         let s_owned = score_card(&owned, &ctx_owned);
@@ -141,6 +145,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert_eq!(s.ownership, 0.0);
@@ -174,6 +179,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert_eq!(s.role, Role::Draw);
@@ -215,6 +221,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert!(s.synergy > 0.0);
@@ -248,6 +255,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert!(s.curve_fit < 1.0);
@@ -295,6 +303,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert!((s.power - share_norm(0.8)).abs() < 1e-6);
@@ -325,6 +334,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         let s = score_card(&c, &ctx);
         assert!((s.power - RANK_ONLY_CAP * rank_curve(3000)).abs() < 1e-6);
@@ -374,6 +384,7 @@ mod tests {
             tag_idf: None,
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         assert!(score_card(&a, &ctx).synergy > 0.0);
         assert_eq!(score_card(&b, &ctx).synergy, 0.0);
@@ -411,6 +422,7 @@ mod tests {
             tag_idf: Some(&idf),
         pip_counts: &[0u32; 5],
         identity: 0,
+        combo_completions: None,
         };
         assert!(score_card(&rare, &ctx).synergy > score_card(&common, &ctx).synergy * 5.0);
     }
@@ -469,6 +481,7 @@ mod tests {
             tag_idf: None,
             pip_counts: &[0u32; 5],
             identity: 0,
+            combo_completions: None,
         };
         score_card(card, &ctx)
     }
@@ -669,6 +682,7 @@ mod tests {
             tag_idf: None,
             pip_counts: &[0u32; 5],
             identity: 0,
+            combo_completions: None,
         };
         let ctx_scarce = ScoreCtx {
             template: &tpl,
@@ -686,12 +700,78 @@ mod tests {
             tag_idf: None,
             pip_counts: &[0u32; 5],
             identity: 0,
+            combo_completions: None,
         };
         let s_deep = score_card(&unowned, &ctx_deep);
         let s_scarce = score_card(&unowned, &ctx_scarce);
         assert!(s_scarce.ownership < s_deep.ownership);
         assert!((s_deep.ownership - (-0.6)).abs() < 1e-5);
         assert!((s_scarce.ownership - (-0.6 * 1.8)).abs() < 1e-5);
+    }
+
+    #[test]
+    fn combo_completion_bonus_raises_synergy_and_reason() {
+        let tpl = midrange_template();
+        let (rc, cc, theme, subs, bab, community, dn, budget) = empty_ctx_state();
+
+        let mut completions: HashMap<String, ComboCompletion> = HashMap::new();
+        completions.insert(
+            "missing piece".into(),
+            ComboCompletion { bonus: 0.5, have: 2, size: 3 },
+        );
+
+        let mut card = sample_card();
+        card.name = "Missing Piece".into();
+        card.name_lower = "missing piece".into();
+        card.roles = vec![Role::Threat];
+
+        let ctx_with = ScoreCtx {
+            template: &tpl,
+            role_counts: &rc,
+            curve_counts: &cc,
+            theme: &theme,
+            commander_subtypes: &subs,
+            build_around_bonus: &bab,
+            community: &community,
+            deck_names: &dn,
+            owned_only: false,
+            budget: &budget,
+            commander_subtypes_lower: None,
+            card_tokens: None,
+            tag_idf: None,
+            pip_counts: &[0u32; 5],
+            identity: 0,
+            combo_completions: Some(&completions),
+        };
+        let ctx_without = ScoreCtx {
+            template: &tpl,
+            role_counts: &rc,
+            curve_counts: &cc,
+            theme: &theme,
+            commander_subtypes: &subs,
+            build_around_bonus: &bab,
+            community: &community,
+            deck_names: &dn,
+            owned_only: false,
+            budget: &budget,
+            commander_subtypes_lower: None,
+            card_tokens: None,
+            tag_idf: None,
+            pip_counts: &[0u32; 5],
+            identity: 0,
+            combo_completions: None,
+        };
+        let s_with = score_card(&card, &ctx_with);
+        let s_without = score_card(&card, &ctx_without);
+        assert!(s_with.synergy > s_without.synergy);
+        assert!(
+            (s_with.synergy - s_without.synergy - 0.5).abs() < 1e-5
+                || (s_with.synergy - 1.0).abs() < 1e-5
+        );
+        assert!(s_with
+            .reasons
+            .iter()
+            .any(|r| r == "completes combo (own 2/3)"));
     }
 
     #[test]
