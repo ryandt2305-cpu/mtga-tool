@@ -1,5 +1,6 @@
 import { type Component, For, Show, createSignal } from "solid-js";
 import Header from "../components/Header";
+import Tooltip from "../components/Tooltip";
 import { diagnostics, schemaWarnings, serviceStatuses } from "../stores/appStore";
 import { exportDiagnostics } from "../lib/tauri";
 
@@ -87,9 +88,11 @@ const Settings: Component = () => {
                   <span class="service-name">{svc.name}</span>
                   <span class="service-detail">{svc.detail}</span>
                   <Show when={svc.path}>
-                    <span class="service-path" title={svc.path!}>
-                      {svc.path}
-                    </span>
+                    <Tooltip text={svc.path!}>
+                      <span class="service-path">
+                        {svc.path}
+                      </span>
+                    </Tooltip>
                   </Show>
                 </div>
               )}

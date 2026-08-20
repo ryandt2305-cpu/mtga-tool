@@ -1,6 +1,7 @@
 // Filter bar for collection view — search, set, rarity, ownership filters.
 
 import { type Component } from "solid-js";
+import Tooltip from "./Tooltip";
 import {
   searchQuery,
   setSearchQuery,
@@ -127,16 +128,17 @@ const FilterBar: Component = () => {
         <option value="count">Count</option>
       </select>
 
-      <button
-        class="sort-dir-btn"
-        title={sortDirection() === "asc" ? "Ascending" : "Descending"}
-        onClick={() => setSortDirection((d) => d === "asc" ? "desc" : "asc")}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"
-          style={{ transform: sortDirection() === "desc" ? "scaleY(-1)" : "none" }}>
-          <path d="M7 2 L12 9 H2 Z" />
-        </svg>
-      </button>
+      <Tooltip text={sortDirection() === "asc" ? "Ascending" : "Descending"}>
+        <button
+          class="sort-dir-btn"
+          onClick={() => setSortDirection((d) => d === "asc" ? "desc" : "asc")}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"
+            style={{ transform: sortDirection() === "desc" ? "scaleY(-1)" : "none" }}>
+            <path d="M7 2 L12 9 H2 Z" />
+          </svg>
+        </button>
+      </Tooltip>
 
       <label class="filter-toggle">
         <input

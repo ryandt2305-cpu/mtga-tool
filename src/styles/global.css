@@ -28,9 +28,16 @@ body {
 
 /* --- App shell --- */
 
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .app {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* --- Sidebar --- */
@@ -2668,4 +2675,162 @@ body {
   text-align: center;
   padding: var(--space-xs);
   word-break: break-word;
+}
+
+/* --- Update banner --- */
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: linear-gradient(180deg, rgba(143, 130, 255, 0.16), rgba(143, 130, 255, 0.08));
+  border-bottom: 1px solid var(--color-accent-muted);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.update-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.update-banner-icon.error {
+  background: var(--color-status-error);
+}
+
+.update-banner-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.update-banner-current {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.update-banner-btn {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  white-space: nowrap;
+}
+
+.update-banner-btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+
+.update-banner-btn.primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.update-banner-btn.primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.update-banner-progress {
+  flex: 0 0 160px;
+  height: 6px;
+  background: var(--color-bg-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.update-banner-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+/* --- Floating layer / Tooltip --- */
+
+.floating-layer {
+  /* Interactive children (popovers) opt in via their own pointer-events.
+     Non-interactive children (tooltips, hover previews) set none themselves. */
+}
+
+.tooltip-anchor {
+  display: inline;
+}
+
+.tooltip-anchor--contents {
+  display: contents;
+}
+
+.tooltip-bubble {
+  background: rgba(22, 22, 29, 0.96);
+  color: var(--color-text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  max-width: 280px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  white-space: normal;
+  word-wrap: break-word;
+  pointer-events: none;
+}
+
+/* --- Chart.js external tooltip --- */
+
+.chart-tooltip {
+  background: rgba(22, 22, 29, 0.96);
+  color: #e8e6f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  min-width: 90px;
+}
+
+.chart-tooltip-title {
+  color: #e8e6f0;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #9995b0;
+}
+
+.chart-tooltip-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  flex-shrink: 0;
 }

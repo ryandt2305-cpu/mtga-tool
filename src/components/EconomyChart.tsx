@@ -61,6 +61,61 @@ interface Props {
 const GRID_COLOR = "rgba(255, 255, 255, 0.06)";
 const TICK_COLOR = "rgba(255, 255, 255, 0.4)";
 
+/** External Chart.js tooltip — renders an HTML element portaled to <body> so
+ *  it can extend past the chart canvas edge without being clipped, and gets
+ *  clamped inside the viewport. */
+function externalTooltip(context: { chart: Chart; tooltip: any }): void {
+  const { chart, tooltip } = context;
+  const id = "chartjs-external-tooltip";
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement("div");
+    el.id = id;
+    el.className = "chart-tooltip";
+    el.style.position = "fixed";
+    el.style.zIndex = "3000";
+    el.style.pointerEvents = "none";
+    el.style.opacity = "0";
+    el.style.transition = "opacity 0.1s ease";
+    document.body.appendChild(el);
+  }
+  if (tooltip.opacity === 0) { el.style.opacity = "0"; return; }
+
+  const title = (tooltip.title ?? []).join(" ");
+  const bodyLines: string[] = tooltip.body.flatMap((b: any) => b.lines);
+  const labelColors: { backgroundColor: string; borderColor: string }[] = tooltip.labelColors ?? [];
+  const rows = bodyLines.map((line, i) => {
+    const c = labelColors[i];
+    const swatch = c
+      ? `<span class="chart-tooltip-swatch" style="background:${c.backgroundColor};border-color:${c.borderColor}"></span>`
+      : "";
+    const safe = line.replace(/[&<>]/g, (m: string) => (m === "&" ? "&amp;" : m === "<" ? "&lt;" : "&gt;"));
+    return `<div class="chart-tooltip-row">${swatch}<span>${safe}</span></div>`;
+  }).join("");
+  el.innerHTML = `${title ? `<div class="chart-tooltip-title">${title.replace(/[&<>]/g, (m: string) => (m === "&" ? "&amp;" : m === "<" ? "&lt;" : "&gt;"))}</div>` : ""}${rows}`;
+
+  const canvasRect = chart.canvas.getBoundingClientRect();
+  const pad = 8;
+  const gap = 12;
+  const preferred = canvasRect.left + tooltip.caretX + gap;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let x = preferred;
+  if (x + w > vw - pad) x = canvasRect.left + tooltip.caretX - gap - w;
+  if (x < pad) x = pad;
+  if (x + w > vw - pad) x = vw - pad - w;
+  let y = canvasRect.top + tooltip.caretY - h / 2;
+  if (y + h > vh - pad) y = vh - pad - h;
+  if (y < pad) y = pad;
+
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.opacity = "1";
+}
+
 const EconomyChart: Component<Props> = (props) => {
   let canvasRef!: HTMLCanvasElement;
   let chart: Chart | undefined;
@@ -126,15 +181,8 @@ const EconomyChart: Component<Props> = (props) => {
             },
           },
           tooltip: {
-            backgroundColor: "rgba(22, 22, 29, 0.95)",
-            titleColor: "#e8e6f0",
-            bodyColor: "#9995b0",
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            borderWidth: 1,
-            padding: 10,
-            cornerRadius: 6,
-            bodyFont: { size: 11 },
-            titleFont: { size: 12 },
+            enabled: false,
+            external: externalTooltip,
           },
         },
         scales,

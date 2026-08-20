@@ -8,6 +8,8 @@ import { result } from "../../stores/deckStore";
 import { rescoreKeeping } from "../../stores/deckStoreActions";
 import { allCards } from "../../stores/collectionStore";
 import { setOverlayCards } from "../../stores/collectionStore";
+import FloatingLayer from "../../components/FloatingLayer";
+import Tooltip from "../../components/Tooltip";
 
 const WC_ICON: Record<string, string> = {
   common: "/icons/ObjectiveIcon_Wildcard_Common.png",
@@ -25,6 +27,7 @@ export function wildcardIconPath(r: Rarity | null): string | null {
 interface Props {
   slot: Slot;
   onClose: () => void;
+  anchor: HTMLElement | null;
 }
 
 const AlternativesPopover: Component<Props> = (props) => {
@@ -52,6 +55,7 @@ const AlternativesPopover: Component<Props> = (props) => {
   }
 
   return (
+    <FloatingLayer anchor={props.anchor} placement="bottom" gap={6} zIndex={80}>
     <div class="decks-alts" onClick={(e) => e.stopPropagation()}>
       <div class="decks-alts-head">
         <span>Swap {props.slot.name}</span>
@@ -68,13 +72,14 @@ const AlternativesPopover: Component<Props> = (props) => {
               const bar = () => Math.round((alt.score / maxScore()) * 100);
               return (
                 <li class={`decks-alts-row ${alt.owned ? "" : "decks-alts-row--unowned"}`} onClick={() => choose(alt)}>
-                  <span
-                    class="decks-alts-name"
-                    onClick={(e) => openOverlay(alt.grp_id, e as unknown as MouseEvent)}
-                    title="Open card"
-                  >
-                    {alt.name}
-                  </span>
+                  <Tooltip text="Open card">
+                    <span
+                      class="decks-alts-name"
+                      onClick={(e) => openOverlay(alt.grp_id, e as unknown as MouseEvent)}
+                    >
+                      {alt.name}
+                    </span>
+                  </Tooltip>
                   <span class="decks-alts-own">
                     <Show when={!alt.owned && wc !== null}>
                       <img class="decks-wc-icon" src={wc!} alt="wildcard" />
@@ -89,6 +94,7 @@ const AlternativesPopover: Component<Props> = (props) => {
         </ul>
       </Show>
     </div>
+    </FloatingLayer>
   );
 };
 

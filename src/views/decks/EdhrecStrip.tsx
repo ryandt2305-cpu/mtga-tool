@@ -14,6 +14,7 @@ import {
 } from "../../stores/deckStore";
 import { allCards, cardsByName } from "../../stores/collectionStore";
 import { getCardImageUrl } from "../../stores/priceStore";
+import Tooltip from "../../components/Tooltip";
 
 const MAX_ROWS = 12;
 
@@ -87,15 +88,17 @@ const EdhrecStrip: Component = () => {
                   const pinned = () => grp() !== null && anchors().must.has(grp()!);
                   const owned = () => grp() !== null;
                   return (
-                    <button
-                      class={`decks-edhrec-card ${owned() ? "" : "decks-edhrec-card--unowned"} ${pinned() ? "decks-edhrec-card--pinned" : ""}`}
-                      onClick={() => onCardClick(row.name)}
-                      disabled={!owned()}
-                      title={
+                    <Tooltip
+                      text={
                         owned()
                           ? `${row.name} — ${Math.round(row.inclusion * 100)}% of decks`
                           : `${row.name} — not on Arena`
                       }
+                    >
+                    <button
+                      class={`decks-edhrec-card ${owned() ? "" : "decks-edhrec-card--unowned"} ${pinned() ? "decks-edhrec-card--pinned" : ""}`}
+                      onClick={() => onCardClick(row.name)}
+                      disabled={!owned()}
                     >
                       <Show
                         when={card() !== undefined}
@@ -122,6 +125,7 @@ const EdhrecStrip: Component = () => {
                         <div class="decks-edhrec-card-pin">📌</div>
                       </Show>
                     </button>
+                    </Tooltip>
                   );
                 }}
               </For>

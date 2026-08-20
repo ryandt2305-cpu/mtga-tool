@@ -273,6 +273,11 @@ pub const LOG_017: DiagnosticCode = DiagnosticCode { code: "LOG-017" };
 /// MatchGameRoomStateChanged parse warning — missing or unexpected field.
 pub const LOG_018: DiagnosticCode = DiagnosticCode { code: "LOG-018" };
 
+/// Player.log has content but no StartHook — "Detailed Logs (Plugin Support)"
+/// is almost certainly disabled in MTGA. Without it, wildcards, gold, gems,
+/// boosters, and other inventory data cannot be parsed from the log.
+pub const LOG_019: DiagnosticCode = DiagnosticCode { code: "LOG-019" };
+
 // --- FeedDb codes (FEED-*) ---
 
 /// Failed to resolve app_data_dir for feed database.

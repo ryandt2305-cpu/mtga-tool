@@ -4,6 +4,7 @@
 import { createSignal, Show, onCleanup, type Component } from "solid-js";
 import type { CollectionEntry } from "../stores/collectionStore";
 import "./ExportPopup.css";
+import Tooltip from "./Tooltip";
 
 interface ExportPopupProps {
   cards: () => CollectionEntry[];
@@ -58,13 +59,14 @@ const ExportPopup: Component<ExportPopupProps> = (props) => {
 
   return (
     <div class="export-container" ref={containerRef}>
-      <button
-        class="export-btn"
-        onClick={() => setOpen(!open())}
-        title="Export visible cards"
-      >
-        Export
-      </button>
+      <Tooltip text="Export visible cards">
+        <button
+          class="export-btn"
+          onClick={() => setOpen(!open())}
+        >
+          Export
+        </button>
+      </Tooltip>
       <Show when={open()}>
         <div class="export-popup">
           <button class="export-popup-option" onClick={copyToClipboard}>

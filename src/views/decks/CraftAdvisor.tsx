@@ -8,6 +8,9 @@ import Disclosure from "./Disclosure";
 import { wcIconForRarity } from "./wildcardIcons";
 import type { CraftSuggestion } from "../../lib/tauri";
 import { result } from "../../stores/deckStore";
+import { rescoreKeeping } from "../../stores/deckStoreActions";
+import CardHoverPreview from "../../components/CardHoverPreview";
+import Tooltip from "../../components/Tooltip";
 
 const CraftAdvisor: Component = () => {
   const suggestions = createMemo<CraftSuggestion[]>(
@@ -24,6 +27,18 @@ const CraftAdvisor: Component = () => {
     );
   };
 
+  function swapIn(s: CraftSuggestion): void {
+    const cur = result();
+    if (cur === null || s.replaces_name === null) return;
+    const target = s.replaces_name.toLowerCase();
+    const keep = cur.slots
+      .filter((slot) => slot.name.toLowerCase() !== target)
+      .map((slot) => slot.grp_id);
+    if (keep.length === cur.slots.length) return; // slot no longer present
+    keep.push(s.grp_id);
+    void rescoreKeeping(keep);
+  }
+
   return (
     <Show when={suggestions().length > 0}>
       <Disclosure label="Craft next" summary={summary}>
@@ -32,7 +47,6 @@ const CraftAdvisor: Component = () => {
             {(s) => (
               <li
                 class={`decks-craft-row ${s.affordable ? "" : "decks-craft-row--locked"}`}
-                title={s.affordable ? undefined : "Not enough wildcards of this rarity yet"}
               >
                 <Show when={wcIconForRarity(s.rarity)} keyed>
                   {(icon) => (
@@ -40,14 +54,45 @@ const CraftAdvisor: Component = () => {
                   )}
                 </Show>
                 <div class="decks-craft-main">
-                  <div class="decks-craft-name">{s.name}</div>
+                  <div class="decks-craft-name">
+                    <CardHoverPreview name={s.name} class="decks-craft-name-link">
+                      {s.name}
+                    </CardHoverPreview>
+                  </div>
                   <div class="decks-stats-sub">
                     <Show when={s.replaces_name}>
-                      <span>replaces {s.replaces_name} · </span>
+                      <span>
+                        replaces{" "}
+                        <CardHoverPreview
+                          name={s.replaces_name!}
+                          class="decks-craft-replaces-link"
+                        >
+                          {s.replaces_name}
+                        </CardHoverPreview>
+                        {" "}·{" "}
+                      </span>
                     </Show>
                     {s.reasons.slice(0, 3).join(" · ")}
                   </div>
                 </div>
+                <Show when={s.replaces_name !== null}>
+                  <Tooltip
+                    text={
+                      s.affordable
+                        ? `Swap ${s.replaces_name} → ${s.name}`
+                        : `Not enough ${s.rarity} wildcards yet — swap anyway`
+                    }
+                  >
+                    <button
+                      type="button"
+                      class="decks-craft-swap"
+                      onClick={() => swapIn(s)}
+                      aria-label={`Swap ${s.replaces_name} for ${s.name}`}
+                    >
+                      ✓
+                    </button>
+                  </Tooltip>
+                </Show>
               </li>
             )}
           </For>

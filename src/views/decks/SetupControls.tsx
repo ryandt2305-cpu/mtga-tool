@@ -21,7 +21,9 @@ import {
   community,
 } from "../../stores/deckStore";
 import { inventory } from "../../stores/economyStore";
+import { detailedLogsMissing } from "../../stores/appStore";
 import type { Format, OwnershipMode, Playstyle, Role, Template, TemplateOverrides, WildcardBudget } from "../../lib/tauri";
+import Tooltip from "../../components/Tooltip";
 
 export const WC_ICONS: Record<keyof WildcardBudget, string> = {
   common: "/icons/ObjectiveIcon_Wildcard_Common.png",
@@ -122,27 +124,48 @@ export const WildcardBudgetControl: Component = () => {
   return (
     <div class="decks-field">
       <div class="decks-field-label">Wildcard budget</div>
+      <Show when={detailedLogsMissing()}>
+        <div class="decks-field-hint decks-field-hint--warn">
+          Wildcard totals unknown — enable <strong>Detailed Logs (Plugin Support)</strong>
+          {" "}in MTGA → Options → Account, then restart MTGA.
+        </div>
+      </Show>
       <div class="decks-wc-grid">
         <For each={["common", "uncommon", "rare", "mythic"] as (keyof WildcardBudget)[]}>
           {(k) => (
-            <div class="decks-wc-row">
+            <div class="decks-wc-budget-row">
               <img class="decks-wc-icon" src={WC_ICONS[k]} alt={k} />
-              <button class="decks-step" onClick={() => setBudget(k, budget()[k] - 1)}>−</button>
-              <input
-                class="decks-step-input"
-                type="number"
-                min="0"
-                max={ownedWc(k) ?? undefined}
-                value={budget()[k]}
-                onInput={(e) => setBudget(k, Number((e.currentTarget as HTMLInputElement).value) || 0)}
-              />
-              <button class="decks-step" onClick={() => setBudget(k, budget()[k] + 1)}>+</button>
-              <span
-                class="decks-wc-owned"
-                title={ownedWc(k) === null ? "Owned counts unknown — launch MTGA to sync" : undefined}
-              >
-                of {ownedWc(k) ?? "?"}
-              </span>
+              <div class="decks-step-group">
+                <button
+                  type="button"
+                  class="decks-step"
+                  aria-label={`Decrease ${k} wildcards`}
+                  onClick={() => setBudget(k, budget()[k] - 1)}
+                >
+                  −
+                </button>
+                <input
+                  class="decks-step-input"
+                  type="number"
+                  min="0"
+                  max={ownedWc(k) ?? undefined}
+                  value={budget()[k]}
+                  onInput={(e) => setBudget(k, Number((e.currentTarget as HTMLInputElement).value) || 0)}
+                />
+                <button
+                  type="button"
+                  class="decks-step"
+                  aria-label={`Increase ${k} wildcards`}
+                  onClick={() => setBudget(k, budget()[k] + 1)}
+                >
+                  +
+                </button>
+              </div>
+              <Tooltip text={ownedWc(k) === null ? "Owned counts unknown — launch MTGA to sync" : undefined}>
+                <span class="decks-wc-owned">
+                  of {ownedWc(k) ?? "?"}
+                </span>
+              </Tooltip>
             </div>
           )}
         </For>
@@ -177,18 +200,19 @@ export const ColorPipsControl: Component = () => (
         {(c) => {
           const active = () => (colorSubset() ?? "").includes(c.letter);
           return (
-            <button
-              class={`decks-pip ${active() ? "decks-pip--active" : ""}`}
-              style={{
-                "background": c.hex,
-                "color": c.text,
-                "border-color": active() ? "var(--color-accent)" : "var(--color-border)",
-              }}
-              onClick={() => toggleColor(c.letter)}
-              title={c.letter}
-            >
-              {c.letter}
-            </button>
+            <Tooltip text={c.letter}>
+              <button
+                class={`decks-pip ${active() ? "decks-pip--active" : ""}`}
+                style={{
+                  "background": c.hex,
+                  "color": c.text,
+                  "border-color": active() ? "var(--color-accent)" : "var(--color-border)",
+                }}
+                onClick={() => toggleColor(c.letter)}
+              >
+                {c.letter}
+              </button>
+            </Tooltip>
           );
         }}
       </For>

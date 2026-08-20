@@ -19,6 +19,7 @@ import {
 } from "../../stores/deckStore";
 import { build } from "../../stores/deckStoreActions";
 import type { Format } from "../../lib/tauri";
+import Tooltip from "../../components/Tooltip";
 import {
   activeTemplate,
   FormatControl,
@@ -148,7 +149,7 @@ const SetupModal: Component<{ onClose: () => void }> = (props) => {
       <div class="decks-modal decks-setup-modal">
         <div class="decks-modal-head">
           <span>Edit setup</span>
-          <button class="decks-alts-close" onClick={props.onClose} title="Close">×</button>
+          <Tooltip text="Close"><button class="decks-alts-close" onClick={props.onClose}>×</button></Tooltip>
         </div>
 
         <div class="decks-setup-modal-body">

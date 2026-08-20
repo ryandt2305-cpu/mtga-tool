@@ -11,16 +11,12 @@ import { allCards, cardsByName, collection } from "../../stores/collectionStore"
 import Disclosure from "./Disclosure";
 import { WC_ICON } from "./wildcardIcons";
 import CraftAdvisor from "./CraftAdvisor";
+import ManaSymbol, { type ManaLetter } from "../../components/ManaSymbol";
+import Tooltip from "../../components/Tooltip";
 
 const CURVE_LABELS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
 
-const PIP_COLORS: { letter: string; hex: string }[] = [
-  { letter: "W", hex: "#f9faf4" },
-  { letter: "U", hex: "#0e68ab" },
-  { letter: "B", hex: "#150b00" },
-  { letter: "R", hex: "#d3202a" },
-  { letter: "G", hex: "#00733e" },
-];
+const PIP_LETTERS: ManaLetter[] = ["W", "U", "B", "R", "G"];
 
 const ROLE_ORDER: Role[] = [
   "land", "ramp", "draw", "removal", "wipe", "counter",
@@ -105,10 +101,10 @@ const PipsRow: Component = () => {
   const pips = () => result()!.stats.pips;
   return (
     <div class="decks-stats-section decks-pips-row">
-      <For each={PIP_COLORS}>
-        {(c, i) => (
+      <For each={PIP_LETTERS}>
+        {(letter, i) => (
           <div class="decks-pip-cell">
-            <span class="decks-pip" style={{ background: c.hex }} title={c.letter} />
+            <ManaSymbol letter={letter} size={18} />
             <span class="decks-pip-count">{pips()[i()] ?? 0}</span>
           </div>
         )}
@@ -141,16 +137,17 @@ const RoleCoverage: Component = () => {
             const below = () => row.count < min();
             const pct = () => Math.min(100, Math.round((row.count / Math.max(max(), 1)) * 100));
             return (
-              <li
-                class={`decks-role-row ${below() ? "decks-role-row--below" : ""}`}
-                title={ROLE_TOOLTIP[row.role]}
-              >
-                <span class="decks-role-label">{row.role}</span>
-                <span class="decks-role-bar"><span style={{ width: `${pct()}%` }} /></span>
-                <span class="decks-role-count">
-                  {row.count}{row.target ? ` / ${min()}–${max()}` : ""}
-                </span>
-              </li>
+              <Tooltip text={ROLE_TOOLTIP[row.role]} contents>
+                <li
+                  class={`decks-role-row ${below() ? "decks-role-row--below" : ""}`}
+                >
+                  <span class="decks-role-label">{row.role}</span>
+                  <span class="decks-role-bar"><span style={{ width: `${pct()}%` }} /></span>
+                  <span class="decks-role-count">
+                    {row.count}{row.target ? ` / ${min()}–${max()}` : ""}
+                  </span>
+                </li>
+              </Tooltip>
             );
           }}
         </For>
@@ -291,13 +288,13 @@ const SignalsDisclosure: Component = () => {
 
   const summary = () => (
     <span class="decks-signals-chips">
-      <span title={combosTip()}>Combos {liveCombos().length}</span>
-      <span title={alignTip()}>
-        Align {alignment() === null ? "—" : `${alignment()!.pct}%`}
-      </span>
-      <span title={shapeTip()}>
-        Shape {shapeGaps() === 0 ? "✓" : `${shapeGaps()} gap${shapeGaps() === 1 ? "" : "s"}`}
-      </span>
+      <Tooltip text={combosTip()}><span>Combos {liveCombos().length}</span></Tooltip>
+      <Tooltip text={alignTip()}>
+        <span>Align {alignment() === null ? "—" : `${alignment()!.pct}%`}</span>
+      </Tooltip>
+      <Tooltip text={shapeTip()}>
+        <span>Shape {shapeGaps() === 0 ? "✓" : `${shapeGaps()} gap${shapeGaps() === 1 ? "" : "s"}`}</span>
+      </Tooltip>
     </span>
   );
 
@@ -345,7 +342,9 @@ const SignalsDisclosure: Component = () => {
                   <div class="decks-signals-combo-head">
                     <span>Add</span>
                     <Show when={row.owned}>
-                      <span class="decks-signals-owned-pip" title="You own this card" />
+                      <Tooltip text="You own this card">
+                        <span class="decks-signals-owned-pip" />
+                      </Tooltip>
                     </Show>
                   </div>
                   <div class="decks-signals-combo-cards">

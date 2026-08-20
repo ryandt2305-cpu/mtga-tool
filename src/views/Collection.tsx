@@ -6,6 +6,7 @@ import FilterBar from "../components/FilterBar";
 import VirtualGrid from "../components/VirtualGrid";
 import CardCell from "../components/CardCell";
 import ExportPopup from "../components/ExportPopup";
+import Tooltip from "../components/Tooltip";
 import {
   hasCollection,
   isScanning,
@@ -114,14 +115,15 @@ const Collection: Component = () => {
                   ? "No collection data yet — open MTGA to sync."
                   : "Scan MTGA's process memory to load your card collection. Make sure the game is running and your collection is loaded."}
               </p>
-              <button
-                class="scan-btn"
-                disabled={isScanning() || isOffline()}
-                title={isOffline() ? "MTGA is not running" : undefined}
-                onClick={doScan}
-              >
-                {isScanning() ? "Scanning..." : "Scan Collection"}
-              </button>
+              <Tooltip text={isOffline() ? "MTGA is not running" : undefined}>
+                <button
+                  class="scan-btn"
+                  disabled={isScanning() || isOffline()}
+                  onClick={doScan}
+                >
+                  {isScanning() ? "Scanning..." : "Scan Collection"}
+                </button>
+              </Tooltip>
               <Show when={isScanning() && scanProgress().total > 0}>
                 <span class="scan-progress">
                   Region {scanProgress().current} / {scanProgress().total}

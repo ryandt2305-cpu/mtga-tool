@@ -18,7 +18,7 @@ use tauri::{AppHandle, Emitter};
 use crate::events;
 use crate::models::inventory::{DeckContents, PlayerCosmetics, PlayerInventory};
 use crate::models::{ActiveMatchState, EventCourse, MasteryState};
-use crate::services::diagnostics::{self, LOG_002, LOG_003, LOG_004, LOG_007, LOG_008};
+use crate::services::diagnostics::{self, LOG_002, LOG_003, LOG_004, LOG_007, LOG_008, LOG_019};
 use crate::services::log::handlers;
 use crate::services::log::parser::{self, LogEventType};
 
@@ -291,6 +291,28 @@ pub(super) fn initial_scan(
     let size = std::fs::metadata(log_path)
         .map(|m| m.len())
         .map_err(|e| format!("Failed to stat {}: {}", log_path.display(), e))?;
+
+    // Detailed Logs heuristic: if the file has substantial content but no
+    // StartHook was ever parsed, "Detailed Logs (Plugin Support)" is almost
+    // certainly disabled in MTGA — the log gets short status lines but none
+    // of the InventoryInfo/DeckSummaries JSON blobs. Warn the user so they
+    // don't sit staring at an empty economy view.
+    //
+    // 128 KiB threshold picks up a running session that's had time to write
+    // some traffic, while skipping a freshly-truncated log where the user is
+    // still on the MTGA login screen.
+    const DETAILED_LOGS_HEURISTIC_MIN_SIZE: u64 = 128 * 1024;
+    if inventory_arc.lock().map(|g| g.is_none()).unwrap_or(true)
+        && size >= DETAILED_LOGS_HEURISTIC_MIN_SIZE
+    {
+        diagnostics::emit_warning(
+            app,
+            &LOG_019,
+            "Player.log has no StartHook — MTGA's \"Detailed Logs (Plugin Support)\" \
+             option is likely disabled. Enable it under Options → Account, then fully \
+             restart MTGA. Without it, wildcards, gold, gems, and boosters cannot be read.",
+        );
+    }
 
     Ok(size)
 }

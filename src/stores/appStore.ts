@@ -1,7 +1,7 @@
 // Singleton app state. Module-level signals — no Context provider needed.
 // init() subscribes to backend events, cleanup() tears down listeners.
 
-import { createSignal } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import {
   Events,
   subscribe,
@@ -22,6 +22,14 @@ const [cardDbError, setCardDbError] = createSignal<string | null>(null);
 
 // --- Diagnostics ---
 const [diagnostics, setDiagnostics] = createSignal<DiagnosticPayload[]>([]);
+
+// True once the backend has emitted LOG-019 — Player.log exists and has
+// content but no StartHook was found, meaning MTGA's "Detailed Logs
+// (Plugin Support)" option is disabled. Consumers show a hint so the user
+// knows why wildcard/gold/gem/booster data is missing.
+const detailedLogsMissing = createMemo(() =>
+  diagnostics().some((d) => d.code === "LOG-019")
+);
 
 // --- Schema warnings ---
 const [schemaWarnings, setSchemaWarnings] = createSignal<SchemaWarningPayload[]>([]);
@@ -44,6 +52,7 @@ export {
   cardDbCardCount,
   cardDbError,
   diagnostics,
+  detailedLogsMissing,
   schemaWarnings,
   serviceStatuses,
   refreshServiceStatuses,

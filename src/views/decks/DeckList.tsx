@@ -28,6 +28,8 @@ import {
 import { deckExportArena } from "../../lib/tauri";
 import { allCards, setOverlayCards } from "../../stores/collectionStore";
 import { getCardImageUrl } from "../../stores/priceStore";
+import ManaSymbol, { type ManaLetter } from "../../components/ManaSymbol";
+import Tooltip from "../../components/Tooltip";
 import AlternativesPopover, { wildcardIconPath } from "./AlternativesPopover";
 import EdhrecStrip from "./EdhrecStrip";
 
@@ -215,7 +217,8 @@ const HeaderBar: Component<HeaderBarProps> = (props) => {
 
   return (
     <div class="decks-list-header">
-      <div class="decks-cmd-summary" onClick={openCmd} title="Open commander">
+      <Tooltip text="Open commander">
+      <div class="decks-cmd-summary" onClick={openCmd}>
         <Show
           when={card() !== undefined}
           fallback={<div class="decks-cmd-thumb decks-cmd-thumb--fallback">{cmd().name}</div>}
@@ -226,11 +229,12 @@ const HeaderBar: Component<HeaderBarProps> = (props) => {
           <div class="decks-cmd-title">{cmd().name}</div>
           <div class="decks-cmd-identity">
             <For each={identity()}>
-              {(letter) => <span class={`decks-pip decks-pip--${letter}`} title={letter} />}
+              {(letter) => <ManaSymbol letter={letter as ManaLetter} size={16} />}
             </For>
           </div>
         </div>
       </div>
+      </Tooltip>
       <div class="decks-list-actions">
         <button class="decks-btn" onClick={props.onBack}>Back</button>
         <button
@@ -240,7 +244,9 @@ const HeaderBar: Component<HeaderBarProps> = (props) => {
         >
           <span>Rebuild</span>
           <Show when={props.dirty()}>
-            <span class="decks-dirty-dot" title="Anchors changed since last build" />
+            <Tooltip text="Anchors changed since last build">
+              <span class="decks-dirty-dot" />
+            </Tooltip>
           </Show>
         </button>
         <Show when={props.showFit()}>
@@ -362,8 +368,11 @@ const DeckRow: Component<{
     if (c !== undefined) setOverlayCards([c]);
   }
 
+  const [altsAnchor, setAltsAnchor] = createSignal<HTMLElement | null>(null);
+
   function toggleAlts(e: MouseEvent): void {
     e.stopPropagation();
+    setAltsAnchor(e.currentTarget as HTMLElement);
     props.setOpenAltGrp(altsOpen() ? null : props.slot.grp_id);
   }
 
@@ -386,9 +395,11 @@ const DeckRow: Component<{
           }}
         />
       </Show>
-      <span class="decks-slot-name" onClick={openCard} title="Open card">
-        {props.slot.name}
-      </span>
+      <Tooltip text="Open card">
+        <span class="decks-slot-name" onClick={openCard}>
+          {props.slot.name}
+        </span>
+      </Tooltip>
       <span class="decks-slot-cmc">{props.slot.cmc}</span>
       <span class="decks-slot-own">
         <Show when={!owned() && wc() !== null}>
@@ -401,30 +412,35 @@ const DeckRow: Component<{
         </For>
       </span>
       <span class="decks-slot-actions">
-        <button
-          class={`decks-icon-btn ${pinned() ? "decks-icon-btn--on" : ""}`}
-          onClick={() => togglePin(props.slot.grp_id)}
-          title="Pin (must include)"
-        >📌</button>
-        <button
-          class={`decks-icon-btn ${starred() ? "decks-icon-btn--on" : ""}`}
-          onClick={() => toggleStar(props.slot.grp_id)}
-          title="Star (build around)"
-        >★</button>
-        <button
-          class={`decks-icon-btn ${banned() ? "decks-icon-btn--on" : ""}`}
-          onClick={() => toggleBan(props.slot.grp_id)}
-          title="Ban (exclude)"
-        >⛔</button>
-        <button
-          class={`decks-icon-btn ${altsOpen() ? "decks-icon-btn--on" : ""}`}
-          onClick={toggleAlts}
-          title="Alternatives"
-        >⇄</button>
+        <Tooltip text="Pin (must include)">
+          <button
+            class={`decks-icon-btn ${pinned() ? "decks-icon-btn--on" : ""}`}
+            onClick={() => togglePin(props.slot.grp_id)}
+          >📌</button>
+        </Tooltip>
+        <Tooltip text="Star (build around)">
+          <button
+            class={`decks-icon-btn ${starred() ? "decks-icon-btn--on" : ""}`}
+            onClick={() => toggleStar(props.slot.grp_id)}
+          >★</button>
+        </Tooltip>
+        <Tooltip text="Ban (exclude)">
+          <button
+            class={`decks-icon-btn ${banned() ? "decks-icon-btn--on" : ""}`}
+            onClick={() => toggleBan(props.slot.grp_id)}
+          >⛔</button>
+        </Tooltip>
+        <Tooltip text="Alternatives">
+          <button
+            class={`decks-icon-btn ${altsOpen() ? "decks-icon-btn--on" : ""}`}
+            onClick={toggleAlts}
+          >⇄</button>
+        </Tooltip>
         <Show when={altsOpen()}>
           <AlternativesPopover
             slot={props.slot}
             onClose={() => props.setOpenAltGrp(null)}
+            anchor={altsAnchor()}
           />
         </Show>
       </span>

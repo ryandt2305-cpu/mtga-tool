@@ -1,6 +1,7 @@
 // Reusable nav button for sidebar. Renders icon + handles active/hover state.
 
 import type { Component } from "solid-js";
+import Tooltip from "./Tooltip";
 
 interface NavButtonProps {
   icon: Component;
@@ -11,13 +12,14 @@ interface NavButtonProps {
 
 const NavButton: Component<NavButtonProps> = (props) => {
   return (
-    <button
-      class={`nav-btn${props.active ? " active" : ""}`}
-      title={props.label}
-      onClick={props.onClick}
-    >
-      {props.icon({})}
-    </button>
+    <Tooltip text={props.label} placement="right">
+      <button
+        class={`nav-btn${props.active ? " active" : ""}`}
+        onClick={props.onClick}
+      >
+        {props.icon({})}
+      </button>
+    </Tooltip>
   );
 };
 

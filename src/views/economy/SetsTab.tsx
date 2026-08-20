@@ -14,6 +14,7 @@ import {
 } from "../../stores/collectionStore";
 import { scryfallSetSvg, setDisplayName } from "../../lib/scryfall";
 import { getCardImageUrl, getCardPrice, getCardPriceSource, currencySymbol, pricesLoaded } from "../../stores/priceStore";
+import Tooltip from "../../components/Tooltip";
 
 // --- Accordion state ---
 
@@ -110,9 +111,9 @@ const CardThumb: Component<{ sc: SetCard; onClick: () => void }> = (props) => {
   const priceSource = createMemo(() => getCardPriceSource(props.sc.card.grp_id, props.sc.card.rarity));
 
   return (
+    <Tooltip text={`${props.sc.card.name} (×${props.sc.owned})`} contents>
     <div
       class={`sets-card-thumb ${isOwned() ? "" : "unowned"} ${rarityClass(props.sc.card.rarity)}`}
-      title={`${props.sc.card.name} (×${props.sc.owned})`}
       onClick={() => props.onClick()}
     >
       <Show when={state() === "loading"}>
@@ -146,6 +147,7 @@ const CardThumb: Component<{ sc: SetCard; onClick: () => void }> = (props) => {
       {/* Count badge */}
       <span class="sets-card-thumb-count">×{props.sc.owned}</span>
     </div>
+    </Tooltip>
   );
 };
 
@@ -223,16 +225,20 @@ const SetRow: Component<{ stats: SetStats }> = (props) => {
         style={{ "border-left-color": completionTintColor(props.stats.percent) }}
         onClick={() => toggleExpand(props.stats.set_code)}
       >
-        <div class="sets-row-icon" title={setDisplayName(props.stats.set_code)}>
-          <img
-            src={scryfallSetSvg(props.stats.set_code)}
-            alt={setDisplayName(props.stats.set_code)}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        </div>
-        <span class="sets-row-code" title={setDisplayName(props.stats.set_code)}>{props.stats.set_code}</span>
+        <Tooltip text={setDisplayName(props.stats.set_code)}>
+          <div class="sets-row-icon">
+            <img
+              src={scryfallSetSvg(props.stats.set_code)}
+              alt={setDisplayName(props.stats.set_code)}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        </Tooltip>
+        <Tooltip text={setDisplayName(props.stats.set_code)}>
+          <span class="sets-row-code">{props.stats.set_code}</span>
+        </Tooltip>
         <div class="sets-row-bar">
           <div
             class="sets-row-bar-fill"

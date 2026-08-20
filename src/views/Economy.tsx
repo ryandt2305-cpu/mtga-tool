@@ -4,6 +4,7 @@
 import { type Component, Show, For, createSignal } from "solid-js";
 import Header from "../components/Header";
 import { inventory, hasInventory } from "../stores/economyStore";
+import { detailedLogsMissing } from "../stores/appStore";
 import { hasCosmetics } from "../stores/cosmeticsStore";
 import { hasMastery } from "../stores/masteryStore";
 import CosmeticsTab from "./economy/CosmeticsTab";
@@ -113,10 +114,25 @@ const TabBar: Component = () => {
 
 const NoData: Component = () => (
   <div class="scan-prompt">
-    <p class="scan-prompt-text">
-      No data yet. Start MTGA and wait for the session to load, or
-      start the log watcher from Settings.
-    </p>
+    <Show
+      when={detailedLogsMissing()}
+      fallback={
+        <p class="scan-prompt-text">
+          No data yet. Start MTGA and wait for the session to load, or
+          start the log watcher from Settings.
+        </p>
+      }
+    >
+      <p class="scan-prompt-text">
+        <strong>MTGA "Detailed Logs (Plugin Support)" is disabled.</strong>
+      </p>
+      <p class="scan-prompt-text">
+        Wildcards, gold, gems, and boosters live in the game log — and MTGA
+        only writes them when this option is on. Turn it on under
+        {" "}<em>MTGA → Options → Account → Detailed Logs (Plugin Support)</em>,
+        then fully restart MTGA.
+      </p>
+    </Show>
   </div>
 );
 
