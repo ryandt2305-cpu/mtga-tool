@@ -191,14 +191,15 @@ fn nonbasic_land_bonus(card: &OracleCard, identity: u8) -> f32 {
 }
 
 /// Sections 3–7: must_include, seed_order, greedy nonland, nonbasic lands,
-/// basics. Returns the filled state, the basic-land slots, and the number of
+/// basics. Returns the filled state, the basic-land slots, the number of
 /// basics originally allocated (so `fill` can recompute basics after local
-/// search shifts pip counts).
+/// search shifts pip counts), and the budget reserved for the upgrade pass
+/// (zero under BestDeck; the remaining wildcard budget under OwnedOnly).
 pub(super) fn fill_core(
     oracles: &[OracleCard],
     community: &CommunityData,
     plan: &FillPlan,
-) -> (FillState, Vec<(usize, u32)>, u32) {
+) -> (FillState, Vec<(usize, u32)>, u32, WildcardBudget) {
     let mut st = FillState {
         chosen: Vec::new(),
         used: HashSet::new(),
@@ -244,6 +245,16 @@ pub(super) fn fill_core(
             }
         }
     }
+
+    // Owned-first skeleton: under OwnedOnly, reserve the remaining budget for
+    // the upgrade pass (upgrade.rs). Sections 4-6 then build from owned cards
+    // only — with st.budget zeroed, compute_ownership marks every unowned
+    // card unaffordable. must_include above still spends real wildcards.
+    let reserved = if plan.owned_only {
+        std::mem::take(&mut st.budget)
+    } else {
+        WildcardBudget::default()
+    };
 
     // 4. seed_order (not forced)
     let pool_set: HashSet<usize> = plan.pool.iter().copied().collect();
@@ -386,11 +397,11 @@ pub(super) fn fill_core(
         super::lands::compute_basics(oracles, plan.identity, &st.chosen, basics_needed);
     st.warnings.extend(basic_warnings);
 
-    (st, basics, basics_needed)
+    (st, basics, basics_needed, reserved)
 }
 
 pub fn fill(oracles: &[OracleCard], community: &CommunityData, plan: &FillPlan) -> FillOutcome {
-    let (mut st, basics, basics_needed) = fill_core(oracles, community, plan);
+    let (mut st, basics, basics_needed, _reserved) = fill_core(oracles, community, plan);
     let prescore = super::local_search::static_prescore(oracles, community, plan);
     super::local_search::improve(oracles, community, plan, &mut st, &prescore);
     // Recompute basics after local search — pip changes may have shifted the
@@ -418,7 +429,7 @@ pub(super) fn fill_state_without_search(
     community: &CommunityData,
     plan: &FillPlan,
 ) -> (FillState, Vec<(usize, f32)>) {
-    let (st, _basics, _needed) = fill_core(oracles, community, plan);
+    let (st, _basics, _needed, _reserved) = fill_core(oracles, community, plan);
     let prescore = super::local_search::static_prescore(oracles, community, plan);
     (st, prescore)
 }

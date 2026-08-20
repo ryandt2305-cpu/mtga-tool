@@ -289,6 +289,52 @@ fn staples_signal_lifts_known_card() {
 }
 
 #[test]
+fn owned_only_skeleton_spends_no_wildcards_outside_must_include() {
+    // With the budget deferred, fill_core must produce a fully owned deck
+    // (no unowned chosen cards) when must_include is empty.
+    let oracles = gen_oracles();
+    let input = EngineInput {
+        oracles,
+        wildcards_owned: WildcardBudget { common: 9, uncommon: 9, rare: 9, mythic: 9 },
+        community: CommunityData::default(),
+    };
+    let req = BuildRequest {
+        format: Format::Brawl100,
+        commander_grp: Some(1),
+        ownership: OwnershipMode::OwnedOnly {
+            wc_budget: WildcardBudget { common: 9, uncommon: 9, rare: 9, mythic: 9 },
+        },
+        playstyle: Playstyle::Midrange,
+        color_subset: None,
+        theme_tags: vec![],
+        must_include: vec![],
+        build_around: vec![],
+        exclude: vec![],
+        seed: None,
+        template_overrides: None,
+        use_17lands: false,
+    };
+    let template = resolve_template(&input, &req).unwrap();
+    let plan = make_plan(&input, &req, &template).unwrap();
+    let (st, _basics, _needed, reserved) = super::fill::fill_core(
+        &input.oracles,
+        &input.community,
+        &plan,
+    );
+    for (idx, _, _) in &st.chosen {
+        assert!(
+            input.oracles[*idx].is_owned(),
+            "unowned card in owned-first skeleton"
+        );
+    }
+    // The full budget is reserved for the upgrade pass.
+    assert_eq!(
+        reserved,
+        WildcardBudget { common: 9, uncommon: 9, rare: 9, mythic: 9 }
+    );
+}
+
+#[test]
 fn make_plan_flags_almost_complete_combos() {
     let oracles = gen_oracles();
     let mut community = CommunityData::default();
