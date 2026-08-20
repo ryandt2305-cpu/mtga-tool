@@ -3,11 +3,13 @@
 // Ownership, wildcard cost, warnings, and community collapse into
 // disclosure rows with a one-line summary you can read without expanding.
 
-import { type Component, For, Show, createMemo, createSignal, type JSX } from "solid-js";
+import { type Component, For, Show, createMemo } from "solid-js";
 import EconomyChart from "../../components/EconomyChart";
 import type { Role, WildcardBudget } from "../../lib/tauri";
 import { community, result } from "../../stores/deckStore";
 import { allCards, cardsByName, collection } from "../../stores/collectionStore";
+import Disclosure from "./Disclosure";
+import { WC_ICON } from "./wildcardIcons";
 
 const CURVE_LABELS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
 
@@ -18,13 +20,6 @@ const PIP_COLORS: { letter: string; hex: string }[] = [
   { letter: "R", hex: "#d3202a" },
   { letter: "G", hex: "#00733e" },
 ];
-
-const WC_ICON: Record<keyof WildcardBudget, string> = {
-  common: "/icons/ObjectiveIcon_Wildcard_Common.png",
-  uncommon: "/icons/ObjectiveIcon_Wildcard_Uncommon.png",
-  rare: "/icons/ObjectiveIcon_Wildcard_Rare.png",
-  mythic: "/icons/ObjectiveIcon_Wildcard_MythicRare.png",
-};
 
 const ROLE_ORDER: Role[] = [
   "land", "ramp", "draw", "removal", "wipe", "counter",
@@ -158,31 +153,6 @@ const RoleCoverage: Component = () => {
           }}
         </For>
       </ul>
-    </div>
-  );
-};
-
-// ── Disclosure primitive ─────────────────────────────────────────
-
-const Disclosure: Component<{
-  label: string;
-  summary: () => JSX.Element;
-  tone?: "default" | "warn" | "error";
-  defaultOpen?: boolean;
-  children: JSX.Element;
-}> = (props) => {
-  const [open, setOpen] = createSignal(props.defaultOpen ?? false);
-  const tone = () => props.tone ?? "default";
-  return (
-    <div class={`decks-disclosure-row decks-disclosure-row--${tone()}`}>
-      <button class="decks-disclosure-head" onClick={() => setOpen(!open())}>
-        <span class="decks-disclosure-caret">{open() ? "▾" : "▸"}</span>
-        <span class="decks-disclosure-label">{props.label}</span>
-        <span class="decks-disclosure-summary">{props.summary()}</span>
-      </button>
-      <Show when={open()}>
-        <div class="decks-disclosure-body">{props.children}</div>
-      </Show>
     </div>
   );
 };
