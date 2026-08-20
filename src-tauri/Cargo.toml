@@ -1,6 +1,6 @@
 [package]
 name = "mtga-hub"
-version = "0.1.2"
+version = "0.1.3"
 description = "MTGA collection and economy tracker"
 authors = ["Ryan"]
 edition = "2021"

@@ -31,6 +31,14 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Fetch icon bundle
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/ryandt2305-cpu/mtga-tool/releases/download/assets-v1/icons.zip" -OutFile icons.zip
+          New-Item -ItemType Directory -Force -Path public/icons | Out-Null
+          Expand-Archive -Path icons.zip -DestinationPath public/icons -Force
+          Remove-Item icons.zip
+
       - name: Build & sign, draft release, upload artifacts + latest.json
         uses: tauri-apps/tauri-action@v0
         env:
