@@ -112,12 +112,26 @@ export interface Warning {
   message: string;
 }
 
+export interface CraftSuggestion {
+  grp_id: number;
+  oracle_id: string;
+  name: string;
+  rarity: Rarity;
+  gain: number;
+  affordable: boolean;
+  replaces_name: string | null;
+  reasons: string[];
+}
+
 export interface BuildResult {
   format: Format;
   commander: Slot;
   slots: Slot[];
   stats: DeckStats;
   warnings: Warning[];
+  // Optional: saved decks serialized before 2026-08-20 lack these.
+  craft_suggestions?: CraftSuggestion[];
+  budget_left?: WildcardBudget;
 }
 
 export interface Weights {

@@ -444,6 +444,8 @@ pub fn build(input: &EngineInput, req: &BuildRequest) -> Result<BuildResult, Bui
         slots,
         stats,
         warnings,
+        craft_suggestions: Vec::new(),
+        budget_left: WildcardBudget::default(),
     })
 }
 

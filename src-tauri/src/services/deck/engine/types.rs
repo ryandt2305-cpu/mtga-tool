@@ -446,12 +446,28 @@ pub struct Warning {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CraftSuggestion {
+    pub grp_id: i32,
+    pub oracle_id: String,
+    pub name: String,
+    pub rarity: Rarity,
+    pub gain: f32,
+    pub affordable: bool,
+    pub replaces_name: Option<String>,
+    pub reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BuildResult {
     pub format: Format,
     pub commander: Slot,
     pub slots: Vec<Slot>,
     pub stats: DeckStats,
     pub warnings: Vec<Warning>,
+    #[serde(default)]
+    pub craft_suggestions: Vec<CraftSuggestion>,
+    #[serde(default)]
+    pub budget_left: WildcardBudget,
 }
 
 #[cfg(test)]
@@ -545,5 +561,41 @@ mod tests {
         for r in Role::ALL {
             assert_eq!(Role::parse(r.as_str()), Some(r));
         }
+    }
+
+    #[test]
+    fn build_result_accepts_legacy_json_without_new_fields() {
+        // Saved decks serialized before craft_suggestions/budget_left existed
+        // must still deserialize (deck_export_arena and SavedDecks depend on it).
+        let slot = Slot {
+            grp_id: 1,
+            oracle_id: "x".into(),
+            name: "X".into(),
+            role: Role::Threat,
+            cmc: 1.0,
+            owned_qty: 1,
+            needed_qty: 1,
+            wildcard_rarity: None,
+            score: 0.0,
+            reasons: vec![],
+            anchored: false,
+            alternatives: vec![],
+        };
+        let result = BuildResult {
+            format: Format::Brawl100,
+            commander: slot.clone(),
+            slots: vec![slot],
+            stats: DeckStats::default(),
+            warnings: vec![],
+            craft_suggestions: vec![],
+            budget_left: WildcardBudget::default(),
+        };
+        let mut v = serde_json::to_value(&result).unwrap();
+        let obj = v.as_object_mut().unwrap();
+        obj.remove("craft_suggestions");
+        obj.remove("budget_left");
+        let back: BuildResult = serde_json::from_value(v).unwrap();
+        assert!(back.craft_suggestions.is_empty());
+        assert_eq!(back.budget_left, WildcardBudget::default());
     }
 }
