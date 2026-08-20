@@ -10,6 +10,8 @@
     "beforeBuildCommand": "npm run build"
   },
   "bundle": {
+    "active": true,
+    "targets": ["msi"],
     "icon": ["icons/icon.ico"]
   },
   "app": {
